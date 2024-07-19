@@ -1,5 +1,5 @@
 import torch
-import torchvision.transforms.v2 as tf
+import torchvision.transforms as tf
 from torch.utils.data import DataLoader
 from torchvision.datasets import CIFAR100
 
