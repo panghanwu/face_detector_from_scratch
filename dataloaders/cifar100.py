@@ -1,3 +1,5 @@
+import logging
+
 import torch
 import torchvision.transforms as tf
 from torch.utils.data import DataLoader
@@ -5,6 +7,7 @@ from torchvision.datasets import CIFAR100
 
 
 def get_cifar100_datasets(batch_size: int, root: str) -> tuple[DataLoader, DataLoader]:
+    logging.info('Prepare CIFAR-100 datasets...')
     transform = tf.Compose([
         tf.ToTensor(),
         tf.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761))
