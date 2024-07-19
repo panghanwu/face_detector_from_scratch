@@ -83,8 +83,9 @@ class ClassificationTrainer(BaseTrainer):
                         batch_correct = self.count_correct(out, tar)
                         accumulator['accuracy'] += batch_correct
 
+                        batch_loss = loss.item() / len(tar)
                         batch_acc = batch_correct / len(tar)
-                        data_for_tqdm = {'loss': f'{loss.item():.2e}', 'acc': f'{batch_acc:.2f}'}
+                        data_for_tqdm = {'loss': f'{batch_loss:.2e}', 'acc': f'{batch_acc:.2f}'}
                         dataloader.set_postfix(data_for_tqdm)
                     
                     total_num_data = len(self.dataloaders[phase].dataset)

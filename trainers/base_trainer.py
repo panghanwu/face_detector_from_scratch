@@ -202,7 +202,8 @@ class BaseTrainer:
                                                 
                         accumulator['loss'] += loss.item()
 
-                        data_for_tqdm = {'loss': f'{loss.item():.2e}'}
+                        batch_loss = loss.item() / self.dataloaders[phase].batch_size
+                        data_for_tqdm = {'loss': f'{batch_loss:.2e}'}
                         dataloader.set_postfix(data_for_tqdm)
 
                     total_num_data = len(self.dataloaders[phase].dataset)
