@@ -40,7 +40,7 @@ class BaseTrainer:
         self.tensorboard = self.init_tensorboard(self.root)
         self._ckpt_meta = {
             'dir': self.root / 'checkpoints', 'best_metric': torch.inf, 
-            'best_fn': None, 'last_fn': None}
+            'best_epoch': None, 'best_fn': None, 'last_fn': None}
         self._reset_epoch_log_keeper()
     
     @staticmethod
@@ -109,6 +109,7 @@ class BaseTrainer:
             self._ckpt_meta['best_metric'] = metric
             self._remove_checkpoint(self._ckpt_meta['best_fn'])
             self._ckpt_meta['best_fn'] = self._ckpt_meta['dir'] / f'best-epoch{self.epoch_i}.pth'
+            self._ckpt_meta['best_epoch'] = self.epoch_i
             torch.save(checkpoint, self._ckpt_meta['best_fn'])
             logging.info(f'Best checkpoint {self._ckpt_meta["best_fn"]} saved.')
 
