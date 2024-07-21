@@ -38,7 +38,7 @@ class ClassificationTrainer(BaseTrainer):
     def cook_epoch_info(self) -> str:
         # customize the info 
         info = f'| val_loss {self.epoch_logs["loss"]["val"]:.2e} '
-        info += f'| val_loss {self.epoch_logs["acc"]["val"]:.2e} '
+        info += f'| val_acc {self.epoch_logs["acc"]["val"]:.2e} '
         return info
     
     def load_batch(self, batch) -> tuple[Tensor, Tensor]:
@@ -101,4 +101,5 @@ class ClassificationTrainer(BaseTrainer):
             self.finish_epoch(self.epoch_logs['loss']['val'])
 
         logging.info(f'=== Mission completed. 🦾 ===')
-        logging.info(f'Best epoch {self._ckpt_meta['best_']}')
+
+        logging.info(f'Best epoch: {self._ckpt_meta["best_epoch"]}')
