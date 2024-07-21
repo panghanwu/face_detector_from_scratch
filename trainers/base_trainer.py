@@ -28,7 +28,6 @@ class BaseTrainer:
         debugging: bool = False
     ) -> None:
         self.debugging = debugging
-        self.init_logging_configs(self.debugging)
         self.tensor_cfgs = {'device': torch.device(device), 'dtype': tensor_dtype}
         self.model = model.to(self.tensor_cfgs['device'])
         self.criterion = criterion
@@ -42,21 +41,6 @@ class BaseTrainer:
             'dir': self.root / 'checkpoints', 'best_metric': torch.inf, 
             'best_epoch': None, 'best_fn': None, 'last_fn': None}
         self._reset_epoch_log_keeper()
-    
-    @staticmethod
-    def init_logging_configs(debugging: bool = False) -> None:
-        """Add preinformation here"""
-        if debugging:
-            logging.basicConfig(
-                format='%(asctime)s | %(levelname)s | %(filename)s | %(message)s',
-                level=logging.DEBUG
-            )
-            logging.info('☢️ Debugging mode!!!')
-        else:
-            logging.basicConfig(
-                format='%(asctime)s | %(levelname)s | %(message)s',
-                level=logging.INFO
-            )
 
     @staticmethod
     def init_tensorboard(logdir: Path):
@@ -151,7 +135,6 @@ class BaseTrainer:
         self.save_checkpoint(val_metric)
         self._reset_epoch_log_keeper()
         self.epoch_i += 1
-
         
     def load_batch(self, batch):
         """Example
