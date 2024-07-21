@@ -35,6 +35,12 @@ class ClassificationTrainer(BaseTrainer):
         _, predictions = torch.max(output, dim=1)
         return torch.sum(predictions == target).item()
     
+    def cook_epoch_info(self) -> str:
+        # customize the info 
+        info = f'| val_loss {self.epoch_logs["loss"]["val"]:.2e} '
+        info += f'| val_loss {self.epoch_logs["acc"]["val"]:.2e} '
+        return info
+    
     def load_batch(self, batch) -> tuple[Tensor, Tensor]:
         inp = batch[0].to(**self.tensor_cfgs)
         tar = batch[1].to(self.tensor_cfgs['device'])
@@ -95,3 +101,4 @@ class ClassificationTrainer(BaseTrainer):
             self.finish_epoch(self.epoch_logs['loss']['val'])
 
         logging.info(f'=== Mission completed. 🦾 ===')
+        logging.info(f'Best epoch {self._ckpt_meta['best_']}')
