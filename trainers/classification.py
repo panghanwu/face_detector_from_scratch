@@ -38,7 +38,7 @@ class ClassificationTrainer(BaseTrainer):
     def cook_epoch_info(self) -> str:
         # customize the info 
         info = f'| val_loss {self.epoch_logs["loss"]["val"]:.2e} '
-        info += f'| val_acc {self.epoch_logs["accuracy"]["val"]:.2e} '
+        info += f'| val_acc {self.epoch_logs["accuracy"]["val"]:.0%} '
         return info
     
     def load_batch(self, batch) -> tuple[Tensor, Tensor]:
