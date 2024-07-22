@@ -30,7 +30,7 @@ class ClassificationTrainer(BaseTrainer):
         super().__init__(model, train_loader, val_loader, optimizer, 
                          criterion, device, configs, 
                          tensor_dtype, mission_name, debugging)
-        self.stopping_meta = {'patience': stopping_patience, 'count': 0, 'previous_loss': torch.inf}
+        self.stopping_meta = {'patience': stopping_patience, 'count': 0, 'best_loss': torch.inf}
 
     @torch.no_grad    
     def count_correct(self, output: Tensor, target: Tensor) -> int:
@@ -47,10 +47,11 @@ class ClassificationTrainer(BaseTrainer):
         if self.stopping_meta['patience'] == 0:
             return False
         
-        if loss > self.stopping_meta['previous_loss']:
+        if loss > self.stopping_meta['best_loss']:
             self.stopping_meta['count'] += 1
         else:
             self.stopping_meta['count'] = 0
+            self.stopping_meta['best_loss'] = loss
 
         if self.stopping_meta['count'] >= self.stopping_meta['patience']:
             return True
@@ -113,7 +114,7 @@ class ClassificationTrainer(BaseTrainer):
                     dataloader.close()
 
             self.finish_epoch(self.epoch_logs['loss']['val'])
-            
+
             if self.early_stop(self.epoch_logs['loss']['val']):
                 logging.info(f'Early stopping at epoch {self.epoch_i}.')
                 break
