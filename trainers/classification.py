@@ -24,11 +24,13 @@ class ClassificationTrainer(BaseTrainer):
         configs: dict | None = None, 
         tensor_dtype: torch.dtype = torch.float32, 
         mission_name: str = 'train',
+        stopping_patience: int = 0,
         debugging: bool = False
     ) -> None:
         super().__init__(model, train_loader, val_loader, optimizer, 
                          criterion, device, configs, 
                          tensor_dtype, mission_name, debugging)
+        self.stopping_meta = {'patience': stopping_patience, 'count': 0, 'previous_loss': torch.inf}
 
     @torch.no_grad    
     def count_correct(self, output: Tensor, target: Tensor) -> int:
@@ -40,6 +42,18 @@ class ClassificationTrainer(BaseTrainer):
         info = f'| val_loss {self.epoch_logs["loss"]["val"]:.2e} '
         info += f'| val_acc {self.epoch_logs["accuracy"]["val"]:.0%} '
         return info
+    
+    def early_stop(self, loss: float) -> bool:
+        if self.stopping_meta['patience'] == 0:
+            return False
+        
+        if loss > self.stopping_meta['previous_loss']:
+            self.stopping_meta['count'] += 1
+        else:
+            self.stopping_meta['count'] = 0
+
+        if self.stopping_meta['count'] >= self.stopping_meta['patience']:
+            return True
     
     def load_batch(self, batch) -> tuple[Tensor, Tensor]:
         inp = batch[0].to(**self.tensor_cfgs)
@@ -99,6 +113,10 @@ class ClassificationTrainer(BaseTrainer):
                     dataloader.close()
 
             self.finish_epoch(self.epoch_logs['loss']['val'])
+            
+            if self.early_stop(self.epoch_logs['loss']['val']):
+                logging.info(f'Early stopping at epoch {self.epoch_i}.')
+                break
 
         logging.info(f'=== Mission completed. 🦾 ===')
 
