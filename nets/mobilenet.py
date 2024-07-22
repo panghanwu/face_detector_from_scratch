@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from dataclasses import dataclass, asdict
 from typing import Literal
+from copy import deepcopy
 
 import torch
 from torch import nn, Tensor
@@ -201,3 +202,9 @@ class MobileNetForClassification(MobileNet):
 
 def create_mobilenet_large_for_classification(num_classes: int, input_channels: int = 3) -> MobileNet:
     return MobileNetForClassification(MOBILENET_LARGE_CONFIG, num_classes, input_channels)
+
+def create_mobilenet_for_cifar(num_classes: int, dropout: float = 0.1) -> MobileNet:
+    cfgs = deepcopy(MOBILENET_LARGE_CONFIG)
+    cfgs[1].stride = 1
+    cfgs[3].stride = 1
+    return MobileNetForClassification(cfgs, num_classes, dropout=dropout)
