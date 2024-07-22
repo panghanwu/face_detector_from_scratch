@@ -113,9 +113,10 @@ class ClassificationTrainer(BaseTrainer):
                     self.finish_phase(phase, accumulator, total_num_data)
                     dataloader.close()
 
-            self.finish_epoch(self.epoch_logs['loss']['val'])
+            val_loss = self.epoch_logs['loss']['val']
+            self.finish_epoch(val_loss)
 
-            if self.early_stop(self.epoch_logs['loss']['val']):
+            if self.early_stop(val_loss):
                 logging.info(f'Early stopping at epoch {self.epoch_i}.')
                 break
 
