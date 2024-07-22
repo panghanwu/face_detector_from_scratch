@@ -16,7 +16,7 @@ def get_cifar100_datasets(batch_size: int, root: str) -> tuple[DataLoader, DataL
     augmentation = tf.Compose([
         base_process,
         tf.RandomHorizontalFlip(),
-        tf.RandomAffine(degrees=0, translate=(0.125, 0.125)),
+        tf.RandomCrop(32, padding=4),
     ])
 
     train_data = CIFAR100(
