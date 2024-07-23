@@ -13,6 +13,72 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 
+class CheckpointHandler:
+    def __init__(
+        self, 
+        patience: int, 
+        save_dir: str, 
+    ) -> None:
+        self.patience = patience
+        self.counter = 0
+        self.best_metric = None
+        self.best_epoch = None
+        self.root = Path(save_dir)
+        self.last_ckp = None
+        self.best_ckp = None
+        self.stopping = False
+
+    def __call__(
+        self, 
+        metric: float, 
+        epoch_i: int, 
+        checkpoint: dict,
+        prefer_lower: bool,
+    ) -> bool:
+        self.remove_checkpoint(self.last_ckp)
+        self.last_ckp = self.save_checkpoint(epoch_i, 'last', checkpoint)
+
+        if self.is_best(metric, prefer_lower):
+            self.remove_checkpoint(self.best_ckp)
+            self.best_ckp = self.save_checkpoint(epoch_i, 'best', checkpoint)
+            logging.info(f'Best checkpoint {self.best_ckp} saved.')
+            self.best_epoch = epoch_i
+            self.best_metric = metric
+            self.counter = 0
+        elif self.patience != 0:
+            self.counter += 1
+            self.stopping = self.counter > self.patience
+        return self.stopping
+
+    @staticmethod
+    def remove_checkpoint(path: Optional[Path]) -> None:
+        try:
+            path.unlink()
+        except AttributeError:
+            if path is not None:
+                path.unlink()  # reproduce the error
+        except FileNotFoundError:
+            logging.warning(f'The previous checkpoint is not found: {path}')
+
+    def save_checkpoint(self, epoch_i: int, prefix: str, checkpoint: dict) -> Path:
+        path = self.root / f'{prefix}-epoch{epoch_i}.pth'
+        torch.save(checkpoint, path)
+        return path
+    
+    def is_best(self, metric: float, prefer_lower: bool) -> bool:
+        try:
+            if prefer_lower and metric < self.best_metric:
+                return True
+            elif not prefer_lower and metric > self.best_metric:
+                return True
+            else:
+                return False
+        except TypeError:
+            if self.best_metric is None:
+                self.best_metric = metric
+            else:
+                self.best_metric == metric  # reproduce the error
+
 class BaseTrainer:
     def __init__(
         self,
@@ -25,6 +91,7 @@ class BaseTrainer:
         configs: Optional[dict] = None,
         tensor_dtype: torch.dtype = torch.float32,
         mission_name: str = 'train',
+        early_stopping_patience: int = 0,
         debugging: bool = False
     ) -> None:
         self.debugging = debugging
@@ -37,9 +104,7 @@ class BaseTrainer:
 
         self.root = self._create_log_dir(mission_name, 'train')
         self.tensorboard = self.init_tensorboard(self.root)
-        self._ckpt_meta = {
-            'dir': self.root / 'checkpoints', 'best_metric': torch.inf, 
-            'best_epoch': None, 'best_fn': None, 'last_fn': None}
+        self.ckpt_handler = CheckpointHandler(early_stopping_patience, self.root / 'checkpoints')
         self._reset_epoch_log_keeper()
 
     @staticmethod
@@ -67,35 +132,6 @@ class BaseTrainer:
             if f.tell() == 0:
                 writer.writeheader()
             writer.writerow(data)
-
-    @staticmethod
-    def _remove_checkpoint(path: Optional[Path]) -> None:
-        try:
-            path.unlink()
-        except AttributeError:
-            if path is not None:
-                path.unlink()
-        except FileNotFoundError:
-            logging.warning(f'The previous checkpoint is not found: {path}')
-
-    def save_checkpoint(self, metric: float) -> None:
-        checkpoint = {
-            'model': self.model.state_dict(),
-            'optimizer': self.optimizer.state_dict(),
-            'configs': self.configs
-        }
-        
-        self._remove_checkpoint(self._ckpt_meta['last_fn'])
-        self._ckpt_meta['last_fn'] = self._ckpt_meta['dir'] / f'last-epoch{self.epoch_i}.pth'
-        torch.save(checkpoint, self._ckpt_meta['last_fn'])
-        
-        if self._ckpt_meta['best_metric'] > metric:
-            self._ckpt_meta['best_metric'] = metric
-            self._remove_checkpoint(self._ckpt_meta['best_fn'])
-            self._ckpt_meta['best_fn'] = self._ckpt_meta['dir'] / f'best-epoch{self.epoch_i}.pth'
-            self._ckpt_meta['best_epoch'] = self.epoch_i
-            torch.save(checkpoint, self._ckpt_meta['best_fn'])
-            logging.info(f'Best checkpoint {self._ckpt_meta["best_fn"]} saved.')
 
     def _update_csv_log(self):
         csv_data = {'epoch': self.epoch_i}
@@ -126,13 +162,12 @@ class BaseTrainer:
         info = f'| train_loss {self.epoch_logs["loss"]["train"]:.2e} | val_loss {self.epoch_logs["loss"]["val"]:.2e}'
         return info
 
-    def finish_epoch(self, val_metric: float) -> None:
+    def finish_epoch(self) -> None:
         self._update_csv_log()
         self._update_scalars_to_tensorboard()
         
         epoch_info = self.cook_epoch_info()
         logging.info(f'Epoch {self.epoch_i} {epoch_info}')
-        self.save_checkpoint(val_metric)
         self._reset_epoch_log_keeper()
         self.epoch_i += 1
         
@@ -195,6 +230,16 @@ class BaseTrainer:
                     dataloader.close()
 
             self.finish_epoch(self.epoch_logs['loss']['val'])
+            checkpoint = {
+                'model': self.model.state_dict(),
+                'optimizer': self.optimizer.state_dict(),
+                'configs': self.configs
+            }
+            early_stopping = self.ckpt_handler(self.epoch_logs['loss']['val'], 
+                                               self.epoch_i, checkpoint, prefer_lower=True)
+            if early_stopping:
+                logging.info(f'Early stopping at epoch {self.epoch_i}.')
+                break
 
         logging.info(f'=== Mission completed. 🦾 ===')
         raise NotImplementedError
