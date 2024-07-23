@@ -26,6 +26,7 @@ trainer = ClassificationTrainer(
     criterion=nn.CrossEntropyLoss(),
     device=DEVICE,
     mission_name='cifar_mobilenet',
+    stopping_patience=0,
     debugging=DEBUGGING
 )
 

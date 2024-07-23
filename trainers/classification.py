@@ -29,8 +29,8 @@ class ClassificationTrainer(BaseTrainer):
     ) -> None:
         super().__init__(model, train_loader, val_loader, optimizer, 
                          criterion, device, configs, 
-                         tensor_dtype, mission_name, debugging)
-        self.stopping_meta = {'patience': stopping_patience, 'count': 0, 'best_loss': torch.inf}
+                         tensor_dtype, mission_name, stopping_patience, 
+                         debugging)
 
     @torch.no_grad    
     def count_correct(self, output: Tensor, target: Tensor) -> int:
@@ -42,19 +42,6 @@ class ClassificationTrainer(BaseTrainer):
         info = f'| val_loss {self.epoch_logs["loss"]["val"]:.2e} '
         info += f'| val_acc {self.epoch_logs["accuracy"]["val"]:.0%} '
         return info
-    
-    def early_stop(self, loss: float) -> bool:
-        if self.stopping_meta['patience'] == 0:
-            return False
-        
-        if loss > self.stopping_meta['best_loss']:
-            self.stopping_meta['count'] += 1
-        else:
-            self.stopping_meta['count'] = 0
-            self.stopping_meta['best_loss'] = loss
-
-        if self.stopping_meta['count'] >= self.stopping_meta['patience']:
-            return True
     
     def load_batch(self, batch) -> tuple[Tensor, Tensor]:
         inp = batch[0].to(**self.tensor_cfgs)
@@ -113,13 +100,18 @@ class ClassificationTrainer(BaseTrainer):
                     self.finish_phase(phase, accumulator, total_num_data)
                     dataloader.close()
 
-            val_loss = self.epoch_logs['loss']['val']
-            self.finish_epoch(val_loss)
-
-            if self.early_stop(val_loss):
+            checkpoint = {
+                'model': self.model.state_dict(),
+                'optimizer': self.optimizer.state_dict(),
+                'configs': self.configs
+            }
+            early_stopping = self.ckpt_handler(self.epoch_logs['accuracy']['val'], 
+                                               self.epoch_i, checkpoint, prefer_lower=False)
+            self.finish_epoch()
+            if early_stopping:
                 logging.info(f'Early stopping at epoch {self.epoch_i}.')
                 break
 
         logging.info(f'=== Mission completed. 🦾 ===')
 
-        logging.info(f'Best epoch: {self._ckpt_meta["best_epoch"]}')
+        logging.info(f'Best epoch: {self.ckpt_handler.best_epoch}')

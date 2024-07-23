@@ -28,6 +28,9 @@ class CheckpointHandler:
         self.best_ckp = None
         self.stopping = False
 
+        if patience != 0:
+            logging.info(f'Set early stopping with patience of {patience} epochs.')
+
     def __call__(
         self, 
         metric: float, 
@@ -47,7 +50,7 @@ class CheckpointHandler:
             self.counter = 0
         elif self.patience != 0:
             self.counter += 1
-            self.stopping = self.counter > self.patience
+            self.stopping = self.counter == self.patience
         return self.stopping
 
     @staticmethod
@@ -91,7 +94,7 @@ class BaseTrainer:
         configs: Optional[dict] = None,
         tensor_dtype: torch.dtype = torch.float32,
         mission_name: str = 'train',
-        early_stopping_patience: int = 0,
+        stopping_patience: int = 0,
         debugging: bool = False
     ) -> None:
         self.debugging = debugging
@@ -104,7 +107,7 @@ class BaseTrainer:
 
         self.root = self._create_log_dir(mission_name, 'train')
         self.tensorboard = self.init_tensorboard(self.root)
-        self.ckpt_handler = CheckpointHandler(early_stopping_patience, self.root / 'checkpoints')
+        self.ckpt_handler = CheckpointHandler(stopping_patience, self.root / 'checkpoints')
         self._reset_epoch_log_keeper()
 
     @staticmethod
@@ -229,7 +232,6 @@ class BaseTrainer:
                     self.finish_phase(phase, accumulator, total_num_data)
                     dataloader.close()
 
-            self.finish_epoch(self.epoch_logs['loss']['val'])
             checkpoint = {
                 'model': self.model.state_dict(),
                 'optimizer': self.optimizer.state_dict(),
@@ -237,6 +239,7 @@ class BaseTrainer:
             }
             early_stopping = self.ckpt_handler(self.epoch_logs['loss']['val'], 
                                                self.epoch_i, checkpoint, prefer_lower=True)
+            self.finish_epoch()
             if early_stopping:
                 logging.info(f'Early stopping at epoch {self.epoch_i}.')
                 break
