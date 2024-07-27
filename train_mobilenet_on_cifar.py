@@ -4,7 +4,7 @@ from torch.optim import SGD
 from dataloaders.cifar100 import get_cifar100_datasets
 from nets.mobilenet import create_mobilenet_for_cifar
 from trainers.classification import ClassificationTrainer
-from utils import init_logging_configs
+from utils.utils import init_logging_configs
 
 CIFAR100_DIR: str = 'datasets'
 DEVICE: str = 'cpu'
