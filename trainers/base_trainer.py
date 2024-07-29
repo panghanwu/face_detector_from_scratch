@@ -6,7 +6,7 @@ from typing import Callable, Literal, Optional
 
 import torch
 from torch import Tensor
-from torch.nn import Module
+from torch.nn import Module, Conv2d
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -81,6 +81,44 @@ class CheckpointHandler:
                 self.best_metric = metric
             else:
                 self.best_metric == metric  # reproduce the error
+
+
+class ConvWeightDeltaCalculator:
+    def __init__(self, module: Module) -> None:
+        self.origin = self.collect_layers_weights(module)
+
+    def __call__(self, module: Module) -> dict[str, tuple[float, float]]:
+        measurement = {}
+        self.this = self.collect_layers_weights(module)
+        for name in self.origin.keys():
+            delta = torch.abs(self.this[name] - self.origin[name])
+            measurement[name] = (delta.mean().item(), delta.std().item())
+        return measurement
+    
+    def collect_convs_weights(self, module: Module) -> list[Tensor]:
+        weights = []
+        for child in module.children():
+            if isinstance(child, Conv2d):
+                weights.append(child.weight.data)
+            else:
+                weights.extend(self.collect_convs_weights(child))
+        return weights
+
+    def collect_layers_weights(self, module: Module) -> dict[str, Tensor]:
+        layers = {}
+        for name, child in module.named_children():
+            weights = self.collect_convs_weights(child)
+            flatten_weights = [w.flatten() for w in weights]
+            layers[name] = torch.cat(flatten_weights)
+        return layers
+    
+    @property
+    def num_params(self) -> dict[str, int]:
+        counter = {}
+        for name, weights in self.origin.items():
+            counter[name] = weights.numel()
+        return counter
+
 
 class BaseTrainer:
     def __init__(
