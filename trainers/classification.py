@@ -1,9 +1,9 @@
 import logging
 from collections import defaultdict
-from typing import Callable, Optional
+from typing import Optional
 
 import torch
-from torch import Tensor
+from torch import Tensor, nn
 from torch.nn import Module
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
@@ -19,7 +19,6 @@ class ClassificationTrainer(BaseTrainer):
         train_loader: DataLoader, 
         val_loader: DataLoader, 
         optimizer: Optimizer, 
-        criterion: Callable, 
         device: str = 'cpu', 
         configs: dict | None = None, 
         tensor_dtype: torch.dtype = torch.float32, 
@@ -28,9 +27,10 @@ class ClassificationTrainer(BaseTrainer):
         debugging: bool = False
     ) -> None:
         super().__init__(model, train_loader, val_loader, optimizer, 
-                         criterion, device, configs, 
+                         None, device, configs, 
                          tensor_dtype, mission_name, stopping_patience, 
                          debugging)
+        self.criterion = nn.CrossEntropyLoss()
 
     @torch.no_grad    
     def count_correct(self, output: Tensor, target: Tensor) -> int:

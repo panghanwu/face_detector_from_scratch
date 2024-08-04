@@ -1,10 +1,10 @@
-from torch import nn
 from torch.optim import SGD
 
 from dataloaders.cifar100 import get_cifar100_datasets
 from nets.mobilenet import create_mobilenet_for_cifar
 from trainers.classification import ClassificationTrainer
 from utils.utils import init_logging_configs
+
 
 CIFAR100_DIR: str = 'datasets'
 DEVICE: str = 'cpu'
@@ -23,7 +23,6 @@ trainer = ClassificationTrainer(
     train_loader,
     test_loader,
     optimizer,
-    criterion=nn.CrossEntropyLoss(),
     device=DEVICE,
     mission_name='cifar_mobilenet',
     stopping_patience=0,

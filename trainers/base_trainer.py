@@ -6,7 +6,7 @@ from typing import Callable, Literal, Optional
 
 import torch
 from torch import Tensor
-from torch.nn import Module, Conv2d
+from torch.nn import Conv2d, Module
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
