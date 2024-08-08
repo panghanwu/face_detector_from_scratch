@@ -20,7 +20,10 @@ class ArcFaceTrainer(BaseTrainer):
         train_loader: DataLoader, 
         val_loader: DataLoader, 
         optimizer: Optimizer, 
+        num_classes: int,
         device: str = 'cpu', 
+        margin: float = 0.1,
+        scale: float = 1.0,
         configs: dict | None = None, 
         tensor_dtype: torch.dtype = torch.float32, 
         mission_name: str = 'train',
@@ -31,7 +34,7 @@ class ArcFaceTrainer(BaseTrainer):
                          None, device, configs, 
                          tensor_dtype, mission_name, stopping_patience, 
                          debugging)
-        self.criterion = ArcFaceLoss(margin=0.5)
+        self.criterion = ArcFaceLoss(num_classes, margin, scale)
 
     @torch.no_grad
     def count_correct(self, output: Tensor, target: Tensor) -> int:

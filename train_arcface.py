@@ -7,14 +7,18 @@ from nets.arcface import create_face_recognition_model
 from trainers.arcface import ArcFaceTrainer
 from utils.utils import init_logging_configs
 
-
-DATA_ROOT_DIR: str = 'datasets/celeba-recog-50'
+TITLE: str = 'arcface'
+DATA_ROOT_DIR: str = 'datasets/celeba-recog-16'
 DEVICE: str = 'cpu'
-BATCH_SIZE: int = 16
-EPOCHS: int = 200
+BATCH_SIZE: int = 8
+EPOCHS: int = 100
+LEARNING_RATE: float = 0.001
 NUM_WORKERS: int = 0
 IMAGE_SIZE: int = 256
 EMBEDDING_DIM: int = 3
+MARGIN: float = 0.1
+SCALE: float = 1.0
+EARLY_STOPPING_PATIENCE: int = 50
 DEBUGGING = False
 
 init_logging_configs(DEBUGGING)
@@ -36,16 +40,17 @@ val_loader = create_face_recognition_dataloader(
     num_workers=NUM_WORKERS
 )
 model = create_face_recognition_model(train_loader.dataset.num_classes, EMBEDDING_DIM)
-optimizer = Adam(model.parameters(), lr=0.001)
+optimizer = Adam(model.parameters(), lr=LEARNING_RATE)
 
 trainer = ArcFaceTrainer(
     model,
     train_loader,
     val_loader,
     optimizer,
+    num_classes=train_loader.dataset.num_classes,
     device=DEVICE,
-    mission_name='arcface',
-    stopping_patience=0,
+    mission_name=TITLE,
+    stopping_patience=EARLY_STOPPING_PATIENCE,
     debugging=DEBUGGING
 )
 

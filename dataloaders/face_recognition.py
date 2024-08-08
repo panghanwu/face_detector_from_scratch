@@ -3,6 +3,7 @@ from pathlib import Path
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from torch import Tensor
+from numpy import ndarray
 import torch
 import cv2
 import pandas as pd
@@ -30,14 +31,14 @@ class FaceRecognitionData(Dataset):
         augmentation: bool = False
     ) -> None:
         self.root = Path(dataset_dir)
-        self.mapping = pd.read_csv(self.root / 'mapping.csv', index_col=0, header=None)
-        self.num_classes = self.mapping[1].max() + 1
-        self.mapping = self.mapping[1].to_dict()
-        self.image_list = list(self.mapping.keys())
         self.img_sz = (image_size, image_size)
         self.aug = augmentation
-        self.to_tensor = transforms.ToTensor()
 
+        df = pd.read_csv(self.root / 'mapping.csv', header=None)
+        self.num_classes = df[1].max() + 1
+        self.image_list = df[0].tolist()
+        self.labels = df[1].tolist()
+        
         if augmentation:
             crop_padding = int(0.3*image_size)
             self.transforms = transforms.Compose([
@@ -48,11 +49,17 @@ class FaceRecognitionData(Dataset):
             ])
 
     def __len__(self):
-        return len(self.mapping)
+        return len(self.labels)
+    
+    @staticmethod
+    def to_tensor(image: ndarray) -> Tensor:
+        tensor = torch.tensor(image).float().permute(2, 0, 1)
+        tensor /= 255.
+        return tensor
     
     def __getitem__(self, index) -> tuple[Tensor, int]:
         fn = self.image_list[index]
-        label = self.mapping[fn]
+        label = self.labels[index]
         image_path = (self.root / 'images') / fn
         img = cv2.imread(str(image_path))[..., ::-1]
         img = pad_to_square(img, fill=0)
