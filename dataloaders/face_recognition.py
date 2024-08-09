@@ -52,7 +52,9 @@ class FaceRecognitionData(Dataset):
         return len(self.labels)
     
     @staticmethod
-    def to_tensor(image: ndarray) -> Tensor:
+    def preprocessing(bgr_image: ndarray, size: tuple[int, int]) -> Tensor:
+        image = pad_to_square(bgr_image[..., ::-1], fill=0)
+        image = cv2.resize(image, size)
         tensor = torch.tensor(image).float().permute(2, 0, 1)
         tensor /= 255.
         return tensor
@@ -61,10 +63,8 @@ class FaceRecognitionData(Dataset):
         fn = self.image_list[index]
         label = self.labels[index]
         image_path = (self.root / 'images') / fn
-        img = cv2.imread(str(image_path))[..., ::-1]
-        img = pad_to_square(img, fill=0)
-        img = cv2.resize(img, self.img_sz)
-        img = self.to_tensor(img)
+        img = cv2.imread(str(image_path))
+        img = self.preprocessing(img, self.img_sz)
         if self.aug:
             img = self.transforms(img)
 
