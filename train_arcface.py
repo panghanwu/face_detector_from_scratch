@@ -11,7 +11,7 @@ TITLE: str = 'arcface'
 DATA_ROOT_DIR: str = 'datasets/celeba-recog-16'
 DEVICE: str = 'cpu'
 BATCH_SIZE: int = 8
-EPOCHS: int = 100
+EPOCHS: int = 10
 LEARNING_RATE: float = 0.001
 NUM_WORKERS: int = 0
 IMAGE_SIZE: int = 256
@@ -40,7 +40,10 @@ val_loader = create_face_recognition_dataloader(
     num_workers=NUM_WORKERS
 )
 model = create_face_recognition_model(train_loader.dataset.num_classes, EMBEDDING_DIM)
-optimizer = Adam(model.parameters(), lr=LEARNING_RATE)
+optimizer = Adam(
+    [{'params': model[0].parameters()}, {'params': model[1].parameters()}], 
+    lr=LEARNING_RATE
+)
 
 trainer = ArcFaceTrainer(
     model,
