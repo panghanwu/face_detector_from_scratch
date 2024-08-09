@@ -12,7 +12,7 @@ class ArcFaceHead(nn.Module):
     def __init__(self, num_classes: int, embedding_dim: int) -> None:
         super().__init__()
         self.weight = nn.Parameter(torch.empty(num_classes, embedding_dim))
-        nn.init.xavier_uniform_(self.weight)
+        nn.init.kaiming_uniform_(self.weight)
 
     def forward(self, x: Tensor) -> Tensor:
         x = F.normalize(x, p=2, dim=1)
