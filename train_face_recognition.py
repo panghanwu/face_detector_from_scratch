@@ -7,7 +7,7 @@ from nets.arcface import create_face_recognition_model
 from trainers.arcface import ArcFaceTrainer
 from utils.utils import init_logging_configs
 
-TITLE: str = 'arcface'
+TITLE: str = 'face_recog'
 DATA_ROOT_DIR: str = 'datasets/celeba-recog-3'
 DEVICE: str = 'cpu'
 BATCH_SIZE: int = 64
@@ -16,8 +16,8 @@ LEARNING_RATE: float = 0.01
 NUM_WORKERS: int = 0
 IMAGE_SIZE: int = 256
 EMBEDDING_DIM: int = 3
-MARGIN: float = 0.01
-SCALE: float = 1.0
+MARGIN: float = 0.05
+SCALE: float = 30.0
 DROPOUT: float = 0.0
 DEBUGGING = False
 
