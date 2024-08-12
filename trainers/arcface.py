@@ -1,12 +1,13 @@
 import logging
 from collections import defaultdict
+from copy import copy
 from typing import Optional
 
 import torch
 from torch import Tensor
 from torch.nn import Module
 from torch.optim import Optimizer
-from torch.optim.lr_scheduler import StepLR
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -36,17 +37,21 @@ class ArcFaceTrainer(BaseTrainer):
                          tensor_dtype, mission_name, stopping_patience, 
                          debugging)
         self.criterion = ArcFaceLoss(num_classes, margin, scale)
-        self.scheduler = StepLR(self.optimizer, step_size=10, gamma=0.5)
+        self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', factor=0.2, patience=10)
 
     @torch.no_grad
     def count_correct(self, output: Tensor, target: Tensor) -> int:
         _, predictions = torch.max(output, dim=1)
         return torch.sum(predictions == target).item()
     
+    def get_lr(self) -> float:
+        return self.optimizer.param_groups[0]['lr']
+    
     def cook_epoch_info(self) -> str:
         # customize the info 
-        info = f'| train_loss {self.epoch_logs["loss"]["train"]:.2e} '
-        info += f'| val_loss {self.epoch_logs["loss"]["val"]:.2e} '
+        info = f'| get_lr {self.get_lr():.1e} '
+        info += f'| train_loss {self.epoch_logs["loss"]["train"]:.3e} '
+        info += f'| val_loss {self.epoch_logs["loss"]["val"]:.3e} '
         info += f'| val_acc {self.epoch_logs["accuracy"]["val"]:.0%} '
         return info
     
@@ -112,10 +117,10 @@ class ArcFaceTrainer(BaseTrainer):
                 'optimizer': self.optimizer.state_dict(),
                 'configs': self.configs
             }
-            early_stopping = self.ckpt_handler(self.epoch_logs['accuracy']['val'], 
-                                               self.epoch_i, checkpoint, prefer_lower=False)
+            train_loss = copy(self.epoch_logs['loss']['train'])
+            early_stopping = self.ckpt_handler(self.epoch_logs['loss']['val'], self.epoch_i, checkpoint, prefer_lower=True)
             self.finish_epoch()
-            self.scheduler.step()
+            self.scheduler.step(train_loss)
             if early_stopping:
                 logging.info(f'Early stopping at epoch {self.epoch_i}.')
                 break

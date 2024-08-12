@@ -18,9 +18,8 @@ IMAGE_SIZE: int = 256
 EMBEDDING_DIM: int = 3
 MARGIN: float = 0.1
 SCALE: float = 1.0
-EARLY_STOPPING_PATIENCE: int = 50
 DROPOUT: float = 0.0
-DEBUGGING = False
+DEBUGGING = True
 
 init_logging_configs(DEBUGGING)
 data_dir = Path(DATA_ROOT_DIR)
@@ -57,7 +56,6 @@ trainer = ArcFaceTrainer(
     num_classes=train_loader.dataset.num_classes,
     device=DEVICE,
     mission_name=TITLE,
-    stopping_patience=EARLY_STOPPING_PATIENCE,
     debugging=DEBUGGING
 )
 
