@@ -2,6 +2,7 @@ import logging
 from collections import defaultdict
 from copy import copy
 from typing import Optional
+import csv
 
 import torch
 from torch import Tensor
@@ -59,6 +60,12 @@ class ArcFaceTrainer(BaseTrainer):
         images = batch[0].to(**self.tensor_cfgs)
         labels = batch[1].to(self.tensor_cfgs['device'])
         return images, labels
+    
+    def add_embeddings_to_csv(self, path: str, embeddings: list[list[float]], groundtruth: list[int]) -> None:
+        data = [[self.epoch_i, gt] + em for em, gt in zip(embeddings, groundtruth)]
+        with open(path, 'a', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerows(data)
 
     def fit(self, epochs: Optional[int] = None):
 
@@ -70,6 +77,8 @@ class ArcFaceTrainer(BaseTrainer):
         
         self.epoch_i = 0
         while self.epoch_i < epochs:
+            embeddings = []
+            groundtruth = []
 
             for phase in ['train', 'val']:
                 self.model.train(phase=='train')
@@ -92,12 +101,16 @@ class ArcFaceTrainer(BaseTrainer):
                         if phase == 'train':
                             self.optimizer.zero_grad()
 
-                        output = self.model(images)
+                        embedding = self.model[0](images)
+                        output = self.model[1](embedding)
                         loss: Tensor = self.criterion(output, labels)
 
                         if phase == 'train':
                             loss.backward()
                             self.optimizer.step()
+
+                        embeddings += embedding.tolist()
+                        groundtruth += labels.tolist()
                         
                         accumulator['loss'] += loss.item()
                         batch_correct = self.count_correct(output, labels)
@@ -112,6 +125,7 @@ class ArcFaceTrainer(BaseTrainer):
                     self.finish_phase(phase, accumulator, total_num_data)
                     dataloader.close()
 
+            self.add_embeddings_to_csv(self.root / 'embeddings.csv', embeddings, groundtruth)
             checkpoint = {
                 'model': self.model.state_dict(),
                 'optimizer': self.optimizer.state_dict(),

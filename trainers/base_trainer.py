@@ -168,7 +168,7 @@ class BaseTrainer:
     
     @staticmethod
     def _add_data_to_csv(path: str, data: dict) -> None:
-        with open(path, 'a') as f:
+        with open(path, 'a', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=data.keys())
             if f.tell() == 0:
                 writer.writeheader()
