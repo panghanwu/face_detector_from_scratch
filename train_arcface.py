@@ -16,10 +16,10 @@ LEARNING_RATE: float = 0.001
 NUM_WORKERS: int = 0
 IMAGE_SIZE: int = 256
 EMBEDDING_DIM: int = 3
-MARGIN: float = 0.1
+MARGIN: float = 0.01
 SCALE: float = 1.0
 DROPOUT: float = 0.0
-DEBUGGING = True
+DEBUGGING = False
 
 init_logging_configs(DEBUGGING)
 data_dir = Path(DATA_ROOT_DIR)
