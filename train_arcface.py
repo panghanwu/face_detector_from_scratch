@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from torch.optim import Adam
+from torch.optim import SGD
 
 from dataloaders.face_recognition import create_face_recognition_dataloader
 from nets.arcface import create_face_recognition_model
@@ -19,6 +19,7 @@ EMBEDDING_DIM: int = 3
 MARGIN: float = 0.1
 SCALE: float = 1.0
 EARLY_STOPPING_PATIENCE: int = 50
+DROPOUT: float = 0.0
 DEBUGGING = False
 
 init_logging_configs(DEBUGGING)
@@ -39,10 +40,13 @@ val_loader = create_face_recognition_dataloader(
     shuffle=False,
     num_workers=NUM_WORKERS
 )
-model = create_face_recognition_model(train_loader.dataset.num_classes, EMBEDDING_DIM)
-optimizer = Adam(
-    [{'params': model[0].parameters()}, {'params': model[1].parameters()}], 
-    lr=LEARNING_RATE
+model = create_face_recognition_model(train_loader.dataset.num_classes, EMBEDDING_DIM, dropout=DROPOUT)
+optimizer = SGD(
+    [
+        {'params': model[0].parameters(), 'lr': 0.1*LEARNING_RATE}, 
+        {'params': model[1].parameters(), 'lr': LEARNING_RATE}
+    ], 
+    lr=LEARNING_RATE, momentum=0.5
 )
 
 trainer = ArcFaceTrainer(

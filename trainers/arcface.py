@@ -6,6 +6,7 @@ import torch
 from torch import Tensor
 from torch.nn import Module
 from torch.optim import Optimizer
+from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -35,6 +36,7 @@ class ArcFaceTrainer(BaseTrainer):
                          tensor_dtype, mission_name, stopping_patience, 
                          debugging)
         self.criterion = ArcFaceLoss(num_classes, margin, scale)
+        self.scheduler = StepLR(self.optimizer, step_size=10, gamma=0.5)
 
     @torch.no_grad
     def count_correct(self, output: Tensor, target: Tensor) -> int:
@@ -113,6 +115,7 @@ class ArcFaceTrainer(BaseTrainer):
             early_stopping = self.ckpt_handler(self.epoch_logs['accuracy']['val'], 
                                                self.epoch_i, checkpoint, prefer_lower=False)
             self.finish_epoch()
+            self.scheduler.step()
             if early_stopping:
                 logging.info(f'Early stopping at epoch {self.epoch_i}.')
                 break

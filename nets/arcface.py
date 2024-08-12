@@ -41,8 +41,8 @@ class ArcFaceLoss(nn.Module):
         return loss
 
 
-def create_face_recognition_model(num_identities: int, embedding_dim: int) -> nn.Module:
-    backbone = MobileNetForClassification(MOBILENET_LARGE_CONFIG, embedding_dim, 3)
+def create_face_recognition_model(num_identities: int, embedding_dim: int, dropout: float = 0.0) -> nn.Module:
+    backbone = MobileNetForClassification(MOBILENET_LARGE_CONFIG, embedding_dim, 3, dropout=dropout)
     model = nn.Sequential(OrderedDict([
         ('backbone', backbone),
         ('head', ArcFaceHead(num_identities, embedding_dim))

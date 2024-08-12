@@ -200,8 +200,8 @@ class MobileNetForClassification(MobileNet):
         x = self.head(x)
         return x
 
-def create_mobilenet_large_for_classification(num_classes: int, input_channels: int = 3) -> MobileNet:
-    return MobileNetForClassification(MOBILENET_LARGE_CONFIG, num_classes, input_channels)
+def create_mobilenet_large_for_classification(num_classes: int, input_channels: int = 3, dropout: float = 0.1) -> MobileNet:
+    return MobileNetForClassification(MOBILENET_LARGE_CONFIG, num_classes, input_channels, dropout=dropout)
 
 def create_mobilenet_for_cifar(num_classes: int, dropout: float = 0.1) -> MobileNet:
     cfgs = deepcopy(MOBILENET_LARGE_CONFIG)
