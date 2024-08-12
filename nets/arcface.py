@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from .mobilenet import MobileNetForClassification, MOBILENET_LARGE_CONFIG
+from .mobilenet import MOBILENET_LARGE_CONFIG, MobileNetForClassification
 
 
 class ArcFaceHead(nn.Module):

@@ -40,13 +40,7 @@ val_loader = create_face_recognition_dataloader(
     num_workers=NUM_WORKERS
 )
 model = create_face_recognition_model(train_loader.dataset.num_classes, EMBEDDING_DIM, dropout=DROPOUT)
-optimizer = SGD(
-    [
-        {'params': model[0].parameters(), 'lr': 0.1*LEARNING_RATE}, 
-        {'params': model[1].parameters(), 'lr': LEARNING_RATE}
-    ], 
-    lr=LEARNING_RATE, momentum=0.5
-)
+optimizer = SGD(model[0].parameters(), lr=LEARNING_RATE, momentum=0.9)
 
 trainer = ArcFaceTrainer(
     model,
