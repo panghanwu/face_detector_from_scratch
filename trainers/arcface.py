@@ -109,7 +109,7 @@ class ArcFaceTrainer(BaseTrainer):
                         embeddings += embedding.tolist()
                         groundtruth += labels.tolist()
                         
-                        accumulator['loss'] += loss.item()
+                        accumulator['loss'] += loss.item() * len(labels)
                         batch_correct = self.count_correct(output, labels)
                         accumulator['accuracy'] += batch_correct
 
