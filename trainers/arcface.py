@@ -48,8 +48,7 @@ class ArcFaceTrainer(BaseTrainer):
     
     def cook_epoch_info(self) -> str:
         # customize the info 
-        info = f'| get_lr {self.get_lr():.1e} '
-        info += f'| train_loss {self.epoch_logs["loss"]["train"]:.3e} '
+        info = f'| train_loss {self.epoch_logs["loss"]["train"]:.3e} '
         info += f'| val_loss {self.epoch_logs["loss"]["val"]:.3e} '
         info += f'| val_acc {self.epoch_logs["accuracy"]["val"]:.0%} '
         return info
